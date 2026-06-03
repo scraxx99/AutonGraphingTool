@@ -121,6 +121,11 @@ function App() {
   const points = path
     .map((p) => `${p.x},${p.y}`)
     .join(" ");
+  //Adding a path to show completion before future path
+  const completedPoints = path
+  .slice(0, currentPoint + 1)
+  .map((p) => `${p.x},${p.y}`)
+  .join(" ");
 
   return (
     <div>
@@ -175,12 +180,19 @@ function App() {
       >
         Reset
       </button>
-
+        //Leader
       <Field>
         <polyline
           points={points}
           stroke="red"
           strokeWidth="6"
+          fill="none"
+        />
+        //Follower 
+        <polyline
+          points={completedPoints}
+          stroke="lime"
+          strokeWidth="8"
           fill="none"
         />
 
