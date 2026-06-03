@@ -20,6 +20,7 @@ function App() {
 
   const [robotX, setRobotX] = useState(0);
   const [robotY, setRobotY] = useState(0);
+  const [robotAngle, setRobotAngle] = useState(0);
 
   // Load JSON path
   useEffect(() => {
@@ -94,7 +95,25 @@ function App() {
 
     return () => clearInterval(animation);
   }, [currentPoint, path]);
+  
+  //Rotation stuff
 
+  useEffect(() => {
+  if (path.length < 2) return;
+
+  const current = path[currentPoint];
+
+  const next =
+    path[Math.min(currentPoint + 1, path.length - 1)];
+
+  const dx = next.x - current.x;
+  const dy = next.y - current.y;
+
+  const angle =
+    (Math.atan2(dy, dx) * 180) / Math.PI;
+
+  setRobotAngle(angle);
+}, [currentPoint, path]);
   if (path.length === 0) {
     return <p>Loading path...</p>;
   }
@@ -195,6 +214,8 @@ function App() {
         <Robot
           x={robotX}
           y={robotY}
+          angle={robotAngle}
+
         />
       </Field>
     </div>
