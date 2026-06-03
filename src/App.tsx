@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Field from "./Field";
 import Robot from "./Robot";
 
@@ -7,73 +7,94 @@ type Point = {
   y: number;
   t: number;
 };
-  
+
 function App() {
   const [path, setPath] = useState<Point[]>([]);
   const [currentPoint, setCurrentPoint] = useState(0);
+
   const [team, setTeam] = useState("254");
   const [auto, setAuto] = useState("left");
+
   const [playing, setPlaying] = useState(true);
   const [time, setTime] = useState(0);
+
   const [robotX, setRobotX] = useState(0);
   const [robotY, setRobotY] = useState(0);
-  // Load path from JSON
-useEffect(() => {
-  console.log(
-    "Loading:",
-    `/paths/team${team}/${auto}.json`
-  );
 
-  fetch(`/paths/team${team}/${auto}.json`)
-    .then((response) => {
-      console.log("Status:", response.status);
+  // Load JSON path
+  useEffect(() => {
+    fetch(`/paths/team${team}/${auto}.json`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            `Could not load team${team}/${auto}.json`
+          );
+        }
 
-      if (!response.ok) {
-        throw new Error(
-          `Could not load team${team}/${auto}.json`
-        );
-      }
+        return response.json();
+      })
+      .then((data: Point[]) => {
+        setPath(data);
 
-      return response.json();
-    })
-    .then((data) => {
-      setPath(data);
-      setCurrentPoint(0);
-    })
-    .catch((error) => {
-      console.error("LOAD ERROR:", error);
-    });
-}, [team, auto]);
-  // Animate robot
+        setCurrentPoint(0);
+        setTime(0);
+
+        if (data.length > 0) {
+          setRobotX(data[0].x);
+          setRobotY(data[0].y);
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }, [team, auto]);
+
+  // Advance waypoint index
   useEffect(() => {
     if (path.length === 0) return;
     if (!playing) return;
+
     const interval = setInterval(() => {
       setCurrentPoint((prev) => {
         if (prev >= path.length - 1) {
-        setPlaying(false);
-        return prev;
+          setPlaying(false);
+          return prev;
         }
-        return prev + 1;
+
+        const next = prev + 1;
+
+        if (path[next]) {
+          setTime(path[next].t);
+        }
+
+        return next;
       });
-      setCurrentPoint((prev) => {
-  if (prev >= path.length - 1) {
-    setPlaying(false);
-    return prev;
-  }
-
-  const next = prev + 1;
-
-  setTime(path[next].t);
-
-  return next;
-});
     }, 300);
 
     return () => clearInterval(interval);
-  }, [path.length, playing]);
+  }, [path, playing]);
 
-  // Wait until JSON is loaded
+  // Smooth robot movement
+  useEffect(() => {
+    if (path.length === 0) return;
+
+    const target = path[currentPoint];
+
+    if (!target) return;
+
+    const animation = setInterval(() => {
+      setRobotX((prev) => {
+        return prev + (target.x - prev) * 0.1;
+      });
+
+      setRobotY((prev) => {
+        return prev + (target.y - prev) * 0.1;
+      });
+    }, 16);
+
+    return () => clearInterval(animation);
+  }, [currentPoint, path]);
+
   if (path.length === 0) {
     return <p>Loading path...</p>;
   }
@@ -85,43 +106,57 @@ useEffect(() => {
   return (
     <div>
       <h1>FRC Auton Viewer</h1>
-        <p>
-  Time: {time.toFixed(1)}s / {path[path.length - 1].t.toFixed(1)}s
-</p>
+
+      <p>
+        Time: {time.toFixed(1)}s /{" "}
+        {path[path.length - 1].t.toFixed(1)}s
+      </p>
+
       <p>Path Length: {path.length}</p>
+
       <p>Current Point: {currentPoint}</p>
+
       <select
-          value={team}
-          onChange={(e) => setTeam(e.target.value)}
-            >
-  <option value="254">254</option>
-  <option value="118">118</option>
-</select>
-<select
-  value={auto}
-  onChange={(e) => setAuto(e.target.value)}
->
-  <option value="left">Left Auto</option>
-  <option value="center">Center Auto</option>
-  <option value="right">Right Auto</option>
-</select>
+        value={team}
+        onChange={(e) => setTeam(e.target.value)}
+      >
+        <option value="254">254</option>
+        <option value="118">118</option>
+      </select>
+
+      <select
+        value={auto}
+        onChange={(e) => setAuto(e.target.value)}
+      >
+        <option value="left">Left Auto</option>
+        <option value="center">Center Auto</option>
+        <option value="right">Right Auto</option>
+      </select>
+
       <button onClick={() => setPlaying(true)}>
-  Play
-</button>
+        Play
+      </button>
 
-<button onClick={() => setPlaying(false)}>
-  Pause
-</button>
+      <button onClick={() => setPlaying(false)}>
+        Pause
+      </button>
 
-<button
-  onClick={() => {
-    setPlaying(false);
-    setCurrentPoint(0);
-    setTime(0);
-  }}
->
-  Reset
-</button>
+      <button
+        onClick={() => {
+          setPlaying(false);
+
+          setCurrentPoint(0);
+          setTime(0);
+
+          if (path.length > 0) {
+            setRobotX(path[0].x);
+            setRobotY(path[0].y);
+          }
+        }}
+      >
+        Reset
+      </button>
+
       <Field>
         <polyline
           points={points}
@@ -130,7 +165,23 @@ useEffect(() => {
           fill="none"
         />
 
-        {/* Debug waypoint markers */}
+        {/* Start marker */}
+        <circle
+          cx={path[0].x}
+          cy={path[0].y}
+          r={8}
+          fill="green"
+        />
+
+        {/* End marker */}
+        <circle
+          cx={path[path.length - 1].x}
+          cy={path[path.length - 1].y}
+          r={8}
+          fill="red"
+        />
+
+        {/* Waypoints */}
         {path.map((p, index) => (
           <circle
             key={index}
@@ -140,10 +191,10 @@ useEffect(() => {
             fill="yellow"
           />
         ))}
-          
+
         <Robot
-          x={path[currentPoint].x}
-          y={path[currentPoint].y}
+          x={robotX}
+          y={robotY}
         />
       </Field>
     </div>
