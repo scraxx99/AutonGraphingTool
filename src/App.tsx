@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import Field from "./Field";
 import Robot from "./Robot";
+import {
+  convertPathPlanner,
+} from "./converters/pathplanner";
 
 type Point = {
   x: number;
@@ -19,7 +22,7 @@ function App() {
 
   // Load JSON path
   useEffect(() => {
-    fetch(`/paths/team${team}/${auto}.json`)
+    fetch("/pathplanner/citrus.path")
       .then((response) => {
         if (!response.ok) {
           throw new Error(
@@ -29,15 +32,16 @@ function App() {
 
         return response.json();
       })
-      .then((data: Point[]) => {
-        setPath(data);
+      .then((data) => {
+        const converted =
+        convertPathPlanner(data);
+
+        console.log(converted);
+
+        setPath(converted);
         setElapsedTime(0);
         setPlaying(true);
-      })
-      .catch((error) => {
-        console.error(error);
-        setPath([]);
-      });
+})
   }, [team, auto]);
 
   // Replay clock

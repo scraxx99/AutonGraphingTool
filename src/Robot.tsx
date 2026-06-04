@@ -11,16 +11,19 @@ export default function Robot({ x, y, angle}: RobotProps) {
   >
     <rect
       x={-15}
-      y={-10}
-      width={30}
-      height={20}
+      y={-23}
+      width={75}
+      height={50
+      }
       fill="blue"
     />
 
     <circle
-      cx={12}
+      cx={60}
       cy={0}
-      r={4}
+      r={4
+
+      }
       fill="white"
     />
   </g>
