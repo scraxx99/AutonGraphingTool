@@ -9,6 +9,7 @@ type Point = {
   x: number;
   y: number;
   t: number;
+  heading?: number;
 };
 
 function App() {
@@ -35,7 +36,17 @@ function App() {
       .then((data) => {
         const converted =
         convertPathPlanner(data);
-
+        console.log("RAW DATA:", data);
+        console.log("Last sample:", converted[converted.length - 1]);
+        console.log(
+        "FIRST TRAJECTORY SAMPLE:",
+        data.trajectory.samples[0]
+        );
+        console.log(
+        "Converted path length:",
+        converted.length
+        );
+        
         console.log(converted);
 
         setPath(converted);
@@ -105,11 +116,19 @@ function App() {
     (end.y - start.y) * progress;
 
   // Robot rotation
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
+  // Robot rotation from PathPlanner heading
+  const startHeading =
+  start.heading ?? 0;
+
+  const endHeading =
+  end.heading ?? startHeading;
+
+  const headingRadians =
+  startHeading +
+  (endHeading - startHeading) * progress;
 
   const robotAngle =
-    (Math.atan2(dy, dx) * 180) / Math.PI;
+  (headingRadians * 180) / Math.PI;
 
   // Full path
   const points = path
@@ -173,7 +192,15 @@ function App() {
           strokeWidth="6"
           fill="none"
         />
-
+        {path.map((p, index) => (
+        <circle
+          key={index}
+          cx={p.x}
+          cy={p.y}
+          r={1}
+          fill="cyan"
+        />
+))}
         {/* Completed path */}
         <polyline
           points={completedPoints}

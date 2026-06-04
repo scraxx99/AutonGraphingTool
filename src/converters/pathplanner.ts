@@ -8,9 +8,9 @@ export type ViewerPoint = {
 export function convertPathPlanner(
   pathData: any
 ): ViewerPoint[] {
-  const SCALE = 60;
+  const SCALE = 100;
 
-  return pathData.trajectory.samples.map(
+  const converted = pathData.trajectory.samples.map(
     (sample: any) => ({
       x: sample.x * SCALE,
       y: sample.y * SCALE,
@@ -18,4 +18,24 @@ export function convertPathPlanner(
       heading: sample.heading,
     })
   );
+
+  console.log(
+    "Bounds:",
+    Math.min(...converted.map((p) => p.x)),
+    Math.max(...converted.map((p) => p.x)),
+    Math.min(...converted.map((p) => p.y)),
+    Math.max(...converted.map((p) => p.y))
+  );
+
+  console.log(
+    "First sample:",
+    converted[0]
+  );
+
+  console.log(
+    "Last sample:",
+    converted[converted.length - 1]
+  );
+
+  return converted;
 }
