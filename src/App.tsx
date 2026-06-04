@@ -10,17 +10,12 @@ type Point = {
 
 function App() {
   const [path, setPath] = useState<Point[]>([]);
-  const [currentPoint, setCurrentPoint] = useState(0);
 
   const [team, setTeam] = useState("254");
   const [auto, setAuto] = useState("left");
 
   const [playing, setPlaying] = useState(true);
-  const [time, setTime] = useState(0);
-
-  const [robotX, setRobotX] = useState(0);
-  const [robotY, setRobotY] = useState(0);
-  const [robotAngle, setRobotAngle] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState(0);
 
   // Load JSON path
   useEffect(() => {
@@ -36,109 +31,101 @@ function App() {
       })
       .then((data: Point[]) => {
         setPath(data);
-
-        setCurrentPoint(0);
-        setTime(0);
-
-        if (data.length > 0) {
-          setRobotX(data[0].x);
-          setRobotY(data[0].y);
-        }
+        setElapsedTime(0);
+        setPlaying(true);
       })
       .catch((error) => {
         console.error(error);
+        setPath([]);
       });
   }, [team, auto]);
 
-  // Advance waypoint index
+  // Replay clock
   useEffect(() => {
-    if (path.length === 0) return;
     if (!playing) return;
+    if (path.length < 2) return;
 
     const interval = setInterval(() => {
-      setCurrentPoint((prev) => {
-        if (prev >= path.length - 1) {
+      setElapsedTime((prev) => {
+        const maxTime = path[path.length - 1].t;
+
+        const next = prev + 0.05;
+
+        if (next >= maxTime) {
           setPlaying(false);
-          return prev;
-        }
-
-        const next = prev + 1;
-
-        if (path[next]) {
-          setTime(path[next].t);
+          return maxTime;
         }
 
         return next;
       });
-    }, 300);
+    }, 50);
 
     return () => clearInterval(interval);
-  }, [path, playing]);
+  }, [playing, path]);
 
-  // Smooth robot movement
-  useEffect(() => {
-    if (path.length === 0) return;
-
-    const target = path[currentPoint];
-
-    if (!target) return;
-
-    const animation = setInterval(() => {
-      setRobotX((prev) => {
-        return prev + (target.x - prev) * 0.1;
-      });
-
-      setRobotY((prev) => {
-        return prev + (target.y - prev) * 0.1;
-      });
-    }, 16);
-
-    return () => clearInterval(animation);
-  }, [currentPoint, path]);
-  
-  //Rotation stuff
-
-  useEffect(() => {
-  if (path.length < 2) return;
-
-  const current = path[currentPoint];
-
-  const next =
-    path[Math.min(currentPoint + 1, path.length - 1)];
-
-  const dx = next.x - current.x;
-  const dy = next.y - current.y;
-
-  const angle =
-    (Math.atan2(dy, dx) * 180) / Math.PI;
-
-  setRobotAngle(angle);
-}, [currentPoint, path]);
   if (path.length === 0) {
     return <p>Loading path...</p>;
   }
 
+  // Find current segment
+  let segmentIndex = path.length - 2;
+
+  for (let i = 0; i < path.length - 1; i++) {
+    if (
+      elapsedTime >= path[i].t &&
+      elapsedTime <= path[i + 1].t
+    ) {
+      segmentIndex = i;
+      break;
+    }
+  }
+
+  const start = path[segmentIndex];
+  const end =
+    path[Math.min(segmentIndex + 1, path.length - 1)];
+
+  const segmentDuration = end.t - start.t;
+
+  const progress =
+    segmentDuration === 0
+      ? 0
+      : (elapsedTime - start.t) / segmentDuration;
+
+  // Robot position
+  const robotX =
+    start.x +
+    (end.x - start.x) * progress;
+
+  const robotY =
+    start.y +
+    (end.y - start.y) * progress;
+
+  // Robot rotation
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+
+  const robotAngle =
+    (Math.atan2(dy, dx) * 180) / Math.PI;
+
+  // Full path
   const points = path
     .map((p) => `${p.x},${p.y}`)
     .join(" ");
-  //Adding a path to show completion before future path
+
+  // Completed path
   const completedPoints = path
-  .slice(0, currentPoint + 1)
-  .map((p) => `${p.x},${p.y}`)
-  .join(" ");
+    .filter((p) => p.t <= elapsedTime)
+    .map((p) => `${p.x},${p.y}`)
+    .join(" ");
 
   return (
     <div>
       <h1>FRC Auton Viewer</h1>
 
       <p>
-        Time: {time.toFixed(1)}s /{" "}
+        Time: {elapsedTime.toFixed(1)}s /{" "}
         {path[path.length - 1].t.toFixed(1)}s
       </p>
-
-      <p>Path Length: {path.length}</p>
-
-      <p>Current Point: {currentPoint}</p>
 
       <select
         value={team}
@@ -168,27 +155,22 @@ function App() {
       <button
         onClick={() => {
           setPlaying(false);
-
-          setCurrentPoint(0);
-          setTime(0);
-
-          if (path.length > 0) {
-            setRobotX(path[0].x);
-            setRobotY(path[0].y);
-          }
+          setElapsedTime(0);
         }}
       >
         Reset
       </button>
-        //Leader
+
       <Field>
+        {/* Remaining path */}
         <polyline
           points={points}
           stroke="red"
           strokeWidth="6"
           fill="none"
         />
-        //Follower 
+
+        {/* Completed path */}
         <polyline
           points={completedPoints}
           stroke="lime"
@@ -227,7 +209,6 @@ function App() {
           x={robotX}
           y={robotY}
           angle={robotAngle}
-
         />
       </Field>
     </div>
