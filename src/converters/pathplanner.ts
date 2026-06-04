@@ -21,10 +21,10 @@ export function convertPathPlanner(
 
   console.log(
     "Bounds:",
-    Math.min(...converted.map((p) => p.x)),
-    Math.max(...converted.map((p) => p.x)),
-    Math.min(...converted.map((p) => p.y)),
-    Math.max(...converted.map((p) => p.y))
+    Math.min(...converted.map((p: any) => p.x)),
+    Math.max(...converted.map((p: any) => p.x)),
+    Math.min(...converted.map((p: any) => p.y)),
+    Math.max(...converted.map((p: any) => p.y))
   );
 
   console.log(
