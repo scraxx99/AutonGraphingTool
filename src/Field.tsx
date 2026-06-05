@@ -19,14 +19,16 @@ export default function Field({ children }: FieldProps) {
       />
 
       <svg
-        width="1000"
-        height="600"
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-        }}
-      >
+      viewBox="0 0 17.55 8.05"
+      preserveAspectRatio="xMidYMid meet"
+      style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+  }}
+>
         {children}
       </svg>
     </div>

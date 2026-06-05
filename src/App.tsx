@@ -197,7 +197,7 @@ function App() {
           key={index}
           cx={p.x}
           cy={p.y}
-          r={1}
+          r={0.05}
           fill="cyan"
         />
 ))}
@@ -213,7 +213,7 @@ function App() {
         <circle
           cx={path[0].x}
           cy={path[0].y}
-          r={8}
+          r={1}
           fill="green"
         />
 
@@ -221,7 +221,7 @@ function App() {
         <circle
           cx={path[path.length - 1].x}
           cy={path[path.length - 1].y}
-          r={8}
+          r={1}
           fill="red"
         />
 
@@ -231,7 +231,7 @@ function App() {
             key={index}
             cx={p.x}
             cy={p.y}
-            r={4}
+            r={0.05}
             fill="yellow"
           />
         ))}
